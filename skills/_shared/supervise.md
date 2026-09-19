@@ -164,8 +164,10 @@ head branch that already has a PR, and a sweep that treats that error as failure
   `.dispatch/progress.md` (that file is git-excluded per §5b, so the reviewer cannot open it — carry
   it over, do not link to it); the acceptance criteria with each one's verified outcome (§6e);
   any recorded deviation from the §3-confirmed plan, stated as such; and a provenance line naming
-  the run id, the lane, **which agent and version wrote the code**, and the approval posture it ran
-  under. The reviewer should know what they are reading before they start reading it.
+  the run id and the lane, and stating that **an agent wrote the code** while the orchestrator
+  authored the plan and verified the result before push. Do not name the model, its version, or the
+  approval posture the lane ran under — that detail belongs in the run's own state, not in a PR the
+  whole repo reads. The reviewer should know what they are reading before they start reading it.
 
 **5. Close the lane.** Record `pr_url` and set the phase to `published`. On failure, record the
 stderr and bump `publish_attempts`; after 3 failed attempts stop retrying, record that as the
