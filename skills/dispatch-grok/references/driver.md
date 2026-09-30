@@ -18,7 +18,8 @@ never assume it works.
 A fresh worktree is not a working environment: no `node_modules/`, no `.env`, no `.venv`, because
 those are untracked or ignored.
 
-    herdr pane run <pane> "grok --version"
+    herdr pane send-text <pane> 'grok --version'
+    herdr pane send-keys <pane> enter
 
 Run the version, not `command -v`: the executable may live outside the login shell's PATH
 (`~/.grok/bin/grok` on this machine) or behind a version manager whose shim resolves while the real
@@ -27,10 +28,11 @@ resolution path. `grok doctor` additionally checks terminal, clipboard, colour a
 without starting a session — worth one run in the *first* lane's pane when anything about the
 terminal looks unusual, not in every lane.
 
-Then poll `herdr pane read <pane> --source visible`. Two verified CLI traps here: `herdr pane read`
-with **no `--source`** returns empty output with exit code 0, and `herdr pane wait-output` only
-matches output arriving *after* the call, so it times out on a command that already finished. Poll
-`--source visible` instead of waiting.
+There is no `herdr pane run`: `pane send-text` only types the text, and `pane send-keys <pane> enter`
+submits it. Then read the result with `herdr pane read <pane> --source visible`. On herdr 0.9.3,
+`herdr pane wait-output` searches the output already on screen before it polls, so it also finds a
+command that already finished (verified). Do not wait on the tool name alone: the echoed command
+line contains it too.
 
 - `grok` not found, or the version refuses to resolve → stop that lane and report it.
   `agent start --kind grok` resolves the executable from the pane's own login shell and args cannot

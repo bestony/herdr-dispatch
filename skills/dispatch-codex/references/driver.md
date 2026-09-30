@@ -14,17 +14,19 @@ version it actually finds; a mismatch is a report line, not an abort.
 A fresh worktree is not a working environment: no `node_modules/`, no `.env`, no `.venv`, because
 those are untracked or ignored.
 
-    herdr pane run <pane> "codex --version"
+    herdr pane send-text <pane> 'codex --version'
+    herdr pane send-keys <pane> enter
 
 Run the version, not `command -v`: on an asdf machine the shim exists and resolves even when the
 worktree has no `.tool-versions` entry for the plugin, and then the launch itself dies with
 `No version is set for command codex` and `agent start` times out (verified). `codex --version`
 exercises the real resolution path.
 
-Then poll `herdr pane read <pane> --source visible`. Two verified CLI traps here: `herdr pane read`
-with **no `--source`** returns empty output with exit code 0, and `herdr pane wait-output` only
-matches output arriving *after* the call, so it times out on a command that already finished. Poll
-`--source visible` instead of waiting.
+There is no `herdr pane run`: `pane send-text` only types the text, and `pane send-keys <pane> enter`
+submits it. Then read the result with `herdr pane read <pane> --source visible`. On herdr 0.9.3,
+`herdr pane wait-output` searches the output already on screen before it polls, so it also finds a
+command that already finished (verified). Do not wait on the tool name alone: the echoed command
+line contains it too.
 
 - `codex` not found, or the version refuses to resolve → stop that lane and report it (for the asdf
   case, suggest the user add the tool to the repo's `.tool-versions` or set a global default).

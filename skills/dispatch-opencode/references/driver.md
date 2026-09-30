@@ -18,15 +18,17 @@ pane reads and git state whenever a probe does not return what it expects.
 A fresh worktree is not a working environment: no `node_modules/`, no `.env`, no `.venv`, because
 those are untracked or ignored.
 
-    herdr pane run <pane> "opencode --version"
+    herdr pane send-text <pane> 'opencode --version'
+    herdr pane send-keys <pane> enter
 
 Run the version, not `command -v`: a shim can resolve while the real binary does not, and then
 `agent start` just times out. Record the version — this driver's "(observed)" claims are bound to it.
 
-Then poll `herdr pane read <pane> --source visible`. Two verified CLI traps here: `herdr pane read`
-with **no `--source`** returns empty output with exit code 0, and `herdr pane wait-output` only
-matches output arriving *after* the call, so it times out on a command that already finished. Poll
-`--source visible` instead of waiting.
+There is no `herdr pane run`: `pane send-text` only types the text, and `pane send-keys <pane> enter`
+submits it. Then read the result with `herdr pane read <pane> --source visible`. On herdr 0.9.3,
+`herdr pane wait-output` searches the output already on screen before it polls, so it also finds a
+command that already finished (verified). Do not wait on the tool name alone: the echoed command
+line contains it too.
 
 - `opencode` not found → stop that lane and report it. `agent start --kind opencode` resolves the
   executable from the pane's own login shell and args cannot redirect it.
