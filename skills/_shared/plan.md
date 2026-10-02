@@ -192,7 +192,12 @@ them: the file must exist before the agent is primed.)
 `<checkout>/.dispatch/TASK.md`, kept out of git:
 
     mkdir -p <checkout>/.dispatch/help
-    printf '.dispatch/\n' >> <checkout>/.git/info/exclude
+    exclude="$(git -C <checkout> rev-parse --path-format=absolute --git-path info/exclude)"
+    grep -qxF '.dispatch/' "$exclude" 2>/dev/null || printf '.dispatch/\n' >> "$exclude"
+
+In a linked worktree `<checkout>/.git` is a file, not a directory, so never write to
+`<checkout>/.git/info/exclude` directly; `--git-path` resolves to the shared exclude file, which
+every lane of this repo reads — hence the `grep` guard against appending it once per lane.
 
 Every lane has its own checkout, so `.dispatch/` never collides between lanes and needs no per-lane
 subdirectory.
@@ -290,7 +295,9 @@ four values; the lane follows it verbatim:
 > 4. **Prefer `continuing` — avoid blocking.** If any checklist item does not depend on the answer,
 >    choose `continuing` and do those items now, committing as usual. Never do work that the answer
 >    could invalidate, and never mark the blocked item done. Choose `waiting` only when every
->    remaining item depends on the answer: then end your turn and stop. The answer arrives as a
+>    remaining item depends on the answer: then end your turn and stop. When a `continuing` request
+>    runs out of independent work, change its `mode:` line to `waiting` before you end your turn,
+>    so the orchestrator knows you are now stopped on it. The answer arrives as a
 >    prompt from the orchestrator; do not poll, sleep, or loop on the file.
 > 5. **Check for answers.** After each checklist item, and at the start of every turn, look for
 >    `.dispatch/help/H-<n>.answer.md` for each request you still have open. When it exists, read it,

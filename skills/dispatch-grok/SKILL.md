@@ -2,7 +2,7 @@
 name: dispatch-grok
 description: Dispatch one or more tasks to grok (Grok Build) agents in herdr workspaces — the orchestrator designs each lane's plan and acceptance criteria, grok pursues them — supervise them to completion, then push each lane and open its pull request. Use when the user asks to dispatch/fan out/派发 tasks to grok agents or herdr lanes, to run several grok tasks in parallel worktrees, or to resume supervision of an existing dispatch-grok run (`--resume`).
 argument-hint: '<task-1>; <task-2>; … [--lanes N] [--base <ref>] [--no-yolo] [--yolo] [--draft] [--no-pr] [--resume] [--no-loop]'
-allowed-tools: Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion, Skill, Bash(herdr:*), Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(python3:*), Bash(grok:*), Bash(mkdir:*), Bash(ls:*), Bash(test:*), Bash(date:*), Bash(mv:*), Bash(cat:*), Bash(printf:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion, Skill, Bash(herdr:*), Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(python3:*), Bash(grok:*), Bash(mkdir:*), Bash(ls:*), Bash(grep:*), Bash(test:*), Bash(date:*), Bash(mv:*), Bash(cat:*), Bash(printf:*)
 ---
 
 # Dispatch tasks to grok agents running under herdr

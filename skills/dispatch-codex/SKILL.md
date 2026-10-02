@@ -2,7 +2,7 @@
 name: dispatch-codex
 description: Dispatch one or more tasks to codex agents in herdr workspaces — the orchestrator designs each lane's plan and acceptance criteria, codex pursues them in goal mode — supervise them to completion, then push each lane and open its pull request. Use when the user asks to dispatch/fan out/派发 tasks to codex agents or herdr lanes, to run several codex tasks in parallel worktrees, or to resume supervision of an existing dispatch-codex run (`--resume`).
 argument-hint: '<task-1>; <task-2>; … [--lanes N] [--base <ref>] [--no-yolo] [--yolo] [--draft] [--no-pr] [--resume] [--no-loop]'
-allowed-tools: Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion, Skill, Bash(herdr:*), Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(python3:*), Bash(mkdir:*), Bash(ls:*), Bash(test:*), Bash(date:*), Bash(mv:*), Bash(cat:*), Bash(printf:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, TodoWrite, AskUserQuestion, Skill, Bash(herdr:*), Bash(git:*), Bash(gh:*), Bash(jq:*), Bash(python3:*), Bash(mkdir:*), Bash(ls:*), Bash(grep:*), Bash(test:*), Bash(date:*), Bash(mv:*), Bash(cat:*), Bash(printf:*)
 ---
 
 # Dispatch tasks to codex agents running under herdr

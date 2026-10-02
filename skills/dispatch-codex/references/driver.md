@@ -71,6 +71,17 @@ Why each part:
   mode (verified): the banner reads `permissions: YOLO mode`, the rollout's
   `thread_settings_applied` event shows `approval_policy: never` with a disabled permission
   profile, and a full goal pursuit — reads, edits, commits — runs without a single overlay.
+- **Under `--no-yolo`, read `~/.codex/config.toml` first.** If it sets `approval_policy = "never"`
+  or `sandbox_mode = "danger-full-access"`, merely dropping the bypass flag still launches the lane
+  in YOLO mode (verified on 0.159.3: the banner still reads `permissions: YOLO mode`), and §3 would
+  promise a posture the lane does not have. Then pass the safe posture explicitly:
+  `-c 'approval_policy="on-request"' -c 'sandbox_mode="workspace-write"'` (verified: the banner
+  loses the YOLO line). What that posture costs, all verified in one test run: every `git add` /
+  `git commit` raises an approval overlay, because a linked worktree's git metadata lives in the
+  main checkout's `.git`, outside the sandbox's writable root; and the §5b rings — completion and
+  help — fail with `PermissionDenied`, because the sandbox blocks the herdr socket. The lane follows
+  the brief's no-retry rule, so under `--no-yolo` the §7 timer is the only way the orchestrator
+  learns of a help request or a DONE — say so in §3's posture line.
 - The bypass is why §3 asks for confirmation, why §1's worktree rule has no opt-out, and why §5b's
   boundaries are load-bearing: the worktree plus the brief are all that keep a lane inside its own
   checkout. Never widen a lane's blast radius beyond that — no lane briefed to push, merge, or open a
