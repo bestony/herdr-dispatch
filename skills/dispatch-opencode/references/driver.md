@@ -180,6 +180,7 @@ one call at report time, not every sweep.
 | `done` | `.dispatch/DONE` exists **and** `turn_state == complete` | Verify (§6e), publish (§6f), mark terminal |
 | `blocked` | `agent_status == blocked` | Read `--source visible`, handle (§6g) |
 | `blind` | `probe == unavailable` for two consecutive sweeps | The database is not answering for this lane. Read `--source visible` once, judge from git state, and escalate rather than steering a lane you cannot see |
+| `help_pending` | a help request (§6j) is open, escalated, or answered but not yet delivered, **and** `turn_state == complete` | Answered and undelivered → deliver (§6d); otherwise leave it — the lane is waiting on you or the user, so do not send a continuation prompt and do not count it toward `no_progress` |
 | `stalled` | `state_change_seq` **and** `mtime` both unchanged ≥ 15 min **and** `turn_state == working` | A turn that started and then froze — usually a provider stall, a permission prompt under `--no-yolo`, or a tool waiting on input. Read `--source visible` once: a dialog → §6g; a wedged tool → escalate; never score as finished |
 | `hot` | `--compact-at N` is set, `context_tokens ≥ N`, **and** `turn_state == complete` | Compact (§6h) |
 | `idle_incomplete` | `turn_state == complete` **and** no `DONE` file | **The engine.** Read `progress.md` and the `todo` rows, send a specific continuation prompt (§6d), record the nudge |
@@ -230,8 +231,19 @@ entry: `nudges` (a count), the branch HEAD sha, and a hash of `progress.md`. On 
   `no_progress == 2`, **stop nudging**: record `escalated` with the last two prompts and what
   `progress.md` last said, and report the lane as awaiting-user. Never fire a third identical nudge.
 
-**When the lane reports a real blocker** — a missing secret, a broken upstream, a contradiction in
-the task — do not improvise scope. If the answer is inside the §3-confirmed plan (a decision the
+**Delivering a help answer (§6j).** A lane that is mid-turn (`turn_state == working`) gets the file
+only: it checks `.dispatch/help/` after every checklist item and at the start of every turn (§5b). A
+lane at rest gets the answer prompt, which **replaces** this sweep's continuation prompt — one
+prompt per lane per sweep — and counts as a nudge for the anti-loop accounting above:
+
+    herdr agent prompt <lane> "Help answer for H-<n> is in .dispatch/help/H-<n>.answer.md. Read it, apply it, append 'applied H-<n>' to .dispatch/progress.md, then continue with <next unchecked item> in <file>."
+
+Fill the tail from `progress.md` exactly as for any continuation prompt. While a lane's only open
+request is unanswered or escalated, `help_pending` keeps it out of `idle_incomplete`: nudging a lane
+that is correctly waiting would only make it guess.
+
+**When the lane reports a real blocker** outside the help-request protocol — in `progress.md` or on
+screen, a missing secret, a broken upstream, a contradiction in the task — do not improvise scope. If the answer is inside the §3-confirmed plan (a decision the
 brief already made, a misread step), send the correction as a normal prompt. Otherwise escalate with
 the blocker quoted (record `escalated`).
 

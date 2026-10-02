@@ -29,7 +29,7 @@ of them, so a cross-reference means the same thing wherever you are:
 | §0 invariants, §1 gate and parse | this file | always, and §0 again at the start of every sweep |
 | §2–§4, §5b | `references/plan.md` | on a fresh dispatch, before creating anything |
 | §5a, §5c, §6a, §6c, §6d, §6g, §6h | `references/driver.md` | everything grok-specific: launch, probe, classify, steer |
-| §6b, §6e, §6f, §6i, §7, §8 | `references/supervise.md` | before the first supervision sweep |
+| §6b, §6e, §6f, §6i, §6j, §7, §8 | `references/supervise.md` | before the first supervision sweep |
 
 `references/plan.md` and `references/supervise.md` are symlinks into the plugin's `skills/_shared/`:
 the shared halves stay single-sourced while still resolving when this skill's directory is copied on
@@ -50,7 +50,7 @@ not invoked.
 3. **`agent_status` alone never means "finished", and it can lie outright.** A background lane reports
    `done` (not `idle`) when unseen work ends — but it reads the same when the prompt was swallowed,
    when grok froze, and when herdr misclassified a modal. Always corroborate (§6). The same goes for
-   a lane's notify-back message (§5b): it is a doorbell that starts a sweep sooner, never evidence
+   a lane's notify-back or help ring (§5b): it is a doorbell that starts a sweep sooner, never evidence
    that skips §6e.
 4. **Grok's goal state is not on disk.** Unlike its context and turn counters, a goal's
    `active` / `paused` / `blocked` status lives only inside the running session and is read by asking

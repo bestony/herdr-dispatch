@@ -15,6 +15,8 @@ The division of labour is deliberate:
 - **The agent executes.** Each lane gets that plan verbatim as a brief and works through it.
 - **Claude publishes.** Lanes are briefed never to push, merge, or open a PR. That one operation
   which reaches a shared remote stays behind Claude's own verification of the acceptance criteria.
+- **Claude answers.** A lane that is stuck asks for help instead of guessing (see
+  [Asking for help](#asking-for-help)), and Claude answers from the plan it wrote.
 
 ---
 
@@ -171,6 +173,27 @@ sweep, re-arms the timer, and re-records the pane to notify. Conversation memory
 The loop stops on its own once every lane is terminal — published, failed, paused by you, or
 verified-but-unpublishable with a recorded reason — and tells you which lanes are waiting on what.
 
+## Asking for help
+
+A lane that is stuck — the plan contradicts the code, the task reads two ways, an acceptance
+criterion cannot be met as written, or the same failure survived two fix attempts — does not guess.
+It writes `.dispatch/help/H-<n>.request.md` with three required parts:
+
+- **Problem** — what is wrong, with the exact error, file and plan step;
+- **Expected solution** — what the lane thinks the right fix or decision is, and why;
+- **Tried** — each approach it already tried, and what happened.
+
+It then rings the orchestrator pane and picks a mode. **`continuing`** (preferred) means it moves on
+to checklist items that do not depend on the answer, so the lane never sits idle. **`waiting`** means
+every remaining item depends on the answer, so it ends its turn and stops.
+
+On the next sweep Claude reads the request, investigates the repo read-only, and writes
+`H-<n>.answer.md`. A lane in mid-turn picks the answer up at its next checklist item; a lane at rest
+gets a prompt pointing at the file. Questions that need a change to the acceptance criteria, a wider
+scope, a secret or a product decision are escalated to you instead, and the lane waits (or keeps
+working on independent items) until you reply. A waiting lane is never nudged or flagged as stalled.
+Answers that change a plan step are reported as deviations in the PR body and the final report.
+
 ## What a run leaves on disk
 
 ```
@@ -183,6 +206,7 @@ verified-but-unpublishable with a recorded reason — and tells you which lanes 
 <lane-checkout>/.dispatch/    # git-excluded via .git/info/exclude
 ├── TASK.md             # objective, confirmed plan, checklist, acceptance criteria, boundaries
 ├── progress.md         # rewritten by the lane after every checklist item
+├── help/               # H-<n>.request.md from the lane, H-<n>.answer.md from Claude
 └── DONE                # written only when the lane believes every criterion holds
 ```
 

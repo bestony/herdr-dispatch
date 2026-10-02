@@ -184,6 +184,7 @@ The helper reads only the **tail** (~2 MB, §0.6) and reports the probe contract
 | `blocked` | `agent_status == blocked` | Read `--source visible`, handle (§6g) |
 | `hard_fail` | `out_of_room` (§6a), and no §6h restart is recorded in flight | Compaction cannot save it — restart per §6h's recipe and re-prime from `.dispatch/` |
 | `goal_parked` | `goal_status` is `paused`, `usage_limited`, or `budget_limited` | Resume or surface, per state (§6d) |
+| `help_pending` | a help request (§6j) is open, escalated, or answered but not yet delivered, **and** `turn_state == complete` | Answered and undelivered → deliver (§6d); otherwise leave it — the lane is waiting on you or the user, so never nudge it or escalate it as stuck |
 | `goal_blocked` | `goal_status` is `blocked` | Steer or escalate (§6d) |
 | `stalled` | `state_change_seq` **and** `mtime` both unchanged ≥ 15 min, and `goal_status` is not `complete` | Read `--source visible` once: a parked selection list → §6d/§6g; an idle composer over unfinished work → the `idle_incomplete` action; otherwise escalate; never score as finished |
 | `hot` | `used_pct ≥ 70` **and** `turn_state == complete` | Compact (§6h) |
@@ -198,6 +199,11 @@ is resumed, not escalated as stuck. `idle_incomplete` excludes an `active` goal 
 auto-continued turns a goal lane briefly reads `done` with `task_complete` — that gap belongs to
 codex's continuation, and what a prompt landing in it does is untested, so the sweep stays out as
 a precaution; an `active` goal that is *truly* wedged surfaces through `stalled`'s frozen `mtime`.
+`help_pending` sits above `goal_blocked` because a lane in `waiting` mode usually ends up there by
+itself: it ends its turn, the active goal auto-continues it, and after three turns on the same
+unanswered question codex lets the model mark the goal `blocked`. That is the expected shape of a
+waiting goal lane, not a new blocker — the answer is the steer.
+
 One known race, by design: a notify-back can arrive before the ringing lane's final turn closes
 (the brief fires it right after DONE is written, mid-turn), so that lane may still read `working`
 with DONE present — re-check it once at the end of the sweep, or leave it to the next tick; both
@@ -246,6 +252,24 @@ contradiction in the task itself), escalate to the user with the blocker quoted 
 finish. The lane reaches `idle_incomplete` (a `complete` goal is neither `active` nor within
 `stalled`'s test), and the continuation prompt there is safe: with no active goal there is no
 auto-continuation to collide with.
+
+**Delivering a help answer (§6j).** The answer file is already on disk; this decides whether the
+lane also needs a prompt. Every prompt here is subject to §6b's prompt guard.
+
+- `turn_state == working`, or `goal_status == active` → file only. The lane checks
+  `.dispatch/help/` after every checklist item and at the start of every turn (§5b), and an active
+  goal starts the next turn by itself. Do not prompt into an active goal's gap between turns — that
+  collision is untested (§6c).
+- `goal_status == blocked` → send the answer prompt below with `--wait --until idle --timeout
+  120000`, then `/goal resume` — the same two-step as any `blocked` steer, for the same reason.
+- `goal_status` is `paused`, `usage_limited` or `budget_limited` → the `goal_parked` rules above
+  decide whether to resume; when they do, the resumed turn finds the file.
+- no goal, or `complete` → send the answer prompt; with no pursuit running there is nothing to
+  collide with.
+
+The answer prompt:
+
+    herdr agent prompt <lane> "Help answer for H-<n> is in .dispatch/help/H-<n>.answer.md. Read it, apply it, append 'applied H-<n>' to .dispatch/progress.md, then continue the plan."
 
 **A `Replace goal?` selection list on screen** — found by §6b's prompt guard or `stalled`'s pane
 read; do not assume herdr reports it as `blocked` (a parked codex selection list can read `done` —

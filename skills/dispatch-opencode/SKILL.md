@@ -29,7 +29,7 @@ of them, so a cross-reference means the same thing wherever you are:
 | §0 invariants, §1 gate and parse | this file | always, and §0 again at the start of every sweep |
 | §2–§4, §5b | `references/plan.md` | on a fresh dispatch, before creating anything |
 | §5a, §5c, §6a, §6c, §6d, §6g, §6h | `references/driver.md` | everything opencode-specific: launch, probe, classify, steer |
-| §6b, §6e, §6f, §6i, §7, §8 | `references/supervise.md` | before the first supervision sweep |
+| §6b, §6e, §6f, §6i, §6j, §7, §8 | `references/supervise.md` | before the first supervision sweep |
 
 `references/plan.md` and `references/supervise.md` are symlinks into the plugin's `skills/_shared/`:
 the shared halves stay single-sourced while still resolving when this skill's directory is copied on
@@ -54,7 +54,7 @@ not invoked.
    runs its tools, and stops. So `agent_status: done` / `idle` says only "the turn ended" — every
    unfinished lane in this run will look exactly like that between sweeps. Completion is
    `.dispatch/DONE` plus §6e's own verification, never the agent's status, and never a lane's
-   notify-back message (§5b), which is a doorbell that starts a sweep sooner and nothing more.
+   notify-back or help ring (§5b), which is a doorbell that starts a sweep sooner and nothing more.
 5. **The supervision loop is load-bearing here, not a safety net.** With no autonomous continuation,
    a lane advances only when a sweep prompts it. `--no-loop` therefore means "this run stops moving
    the moment I stop watching" — say so in Chinese when the user passes it (§7).

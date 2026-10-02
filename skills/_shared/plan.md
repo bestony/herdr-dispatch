@@ -191,7 +191,7 @@ them: the file must exist before the agent is primed.)
 
 `<checkout>/.dispatch/TASK.md`, kept out of git:
 
-    mkdir -p <checkout>/.dispatch
+    mkdir -p <checkout>/.dispatch/help
     printf '.dispatch/\n' >> <checkout>/.git/info/exclude
 
 Every lane has its own checkout, so `.dispatch/` never collides between lanes and needs no per-lane
@@ -200,7 +200,8 @@ subdirectory.
 The brief contains, in English: **objective**; the **plan** — the §3 plan exactly as the user
 confirmed it, with a standing instruction: execute it in order, and when reality contradicts a
 step, record the deviation and its reason prominently in `.dispatch/progress.md` instead of
-silently re-designing; the **checklist** as `- [ ]` items; the **acceptance criteria** — the §3
+silently re-designing — and when the contradiction leaves no clear way forward, ask through the
+help-request protocol below; the **checklist** as `- [ ]` items; the **acceptance criteria** — the §3
 criteria exactly as confirmed, with the framing that they, not the checklist ticks, define done:
 DONE is written only when every criterion verifiably holds; **boundaries** (work only in this
 checkout, never `cd` to the main checkout, never touch another lane's files, never push, never
@@ -231,8 +232,8 @@ Then the load-bearing part:
 > **Progress protocol.** Keep `.dispatch/progress.md` current: after each checklist item, rewrite it
 > with the checklist and its tick state, what you just did, what you are about to do, and any decision
 > a fresh reader would need. Assume your context may be compacted at any moment and this file is all
-> you keep. When every checklist item is done, every acceptance criterion holds and `git status` is
-> clean, write `.dispatch/DONE` with a one-line summary.
+> you keep. When every checklist item is done, every acceptance criterion holds, no help request is
+> still open, and `git status` is clean, write `.dispatch/DONE` with a one-line summary.
 
 `.dispatch/progress.md` carries more weight the less autonomous the agent is: for a lane driven by
 re-nudges (§6c `idle_incomplete`) it is the only thing that tells the next nudge where to resume, so
@@ -248,9 +249,58 @@ until the next §7 tick. Write it into the brief with `<orch-pane>` (the §2 `or
 >     herdr agent prompt <orch-pane> "[<skill> <run-id>] lane <lane> wrote DONE — run one <skill> --resume sweep now."
 >
 > If it errors or is rejected (e.g. `agent_blocked`), do not retry and do not investigate — the
-> orchestrator also polls on a timer and will find `.dispatch/DONE` regardless. This is the only
-> herdr command in your job: it targets only the pane named here, and you never read, prompt, or
-> send keys to any other pane or agent.
+> orchestrator also polls on a timer and will find `.dispatch/DONE` regardless. This command and
+> the help ring below are the only herdr commands in your job: both target only the pane named
+> here, and you never read, prompt, or send keys to any other pane or agent.
+
+Then the help-request protocol, so a lane that is stuck asks the one participant who wrote its plan
+instead of guessing, silently re-designing, or spinning until a sweep notices. Substitute the same
+four values; the lane follows it verbatim:
+
+> **Help-request protocol.** When you are stuck — a step of the plan contradicts the code, two
+> readings of the task are both plausible, an acceptance criterion cannot be met as written, or the
+> same failure survived two honest fix attempts — ask the orchestrator instead of guessing. Do not
+> ask about what you can find out yourself by reading the repo, the brief, or the tool's own output.
+>
+> 1. Pick the next id: `H-<n>`, where `<n>` is one more than the highest number already in
+>    `.dispatch/help/` (start at `H-1`). Write `.dispatch/help/H-<n>.request.md` with exactly these
+>    sections:
+>
+>        # H-<n>
+>        mode: continuing | waiting
+>        checklist_item: <the item you were on, quoted>
+>        ## Problem
+>        <what is wrong: the exact error text, the file and line, the step of the plan involved>
+>        ## Expected solution
+>        <what you think the right fix or decision is, and why; say so when you have no candidate>
+>        ## Tried
+>        <each approach you tried and what happened, one bullet each, with the command you ran>
+>        ## Meanwhile
+>        <for `continuing`: which independent checklist items you will do while you wait;
+>        for `waiting`: why nothing else can move until this is answered>
+>
+>    Write the file to `H-<n>.request.md.tmp` first, then rename it, so the orchestrator never reads
+>    a half-written request.
+> 2. Record the open request in `.dispatch/progress.md` (`waiting on H-<n>` or
+>    `H-<n> open, continuing with …`), so it survives compaction.
+> 3. Ring the orchestrator once, with the same no-retry rule as the completion notify-back:
+>
+>        herdr agent prompt <orch-pane> "[<skill> <run-id>] lane <lane> asked for help H-<n> — run one <skill> --resume sweep now."
+>
+> 4. **Prefer `continuing` — avoid blocking.** If any checklist item does not depend on the answer,
+>    choose `continuing` and do those items now, committing as usual. Never do work that the answer
+>    could invalidate, and never mark the blocked item done. Choose `waiting` only when every
+>    remaining item depends on the answer: then end your turn and stop. The answer arrives as a
+>    prompt from the orchestrator; do not poll, sleep, or loop on the file.
+> 5. **Check for answers.** After each checklist item, and at the start of every turn, look for
+>    `.dispatch/help/H-<n>.answer.md` for each request you still have open. When it exists, read it,
+>    apply it, then append `applied H-<n>: <one line>` to `.dispatch/progress.md`. The answer is the
+>    orchestrator's decision on the plan: follow it even where it changes a step, and record that
+>    change in `progress.md` as a deviation authorised by H-<n>. If the answer says `escalated to
+>    the user`, keep the same mode and wait for the final answer that follows.
+> 6. At most one `waiting` request at a time. Do not re-ask the same question under a new id; if an
+>    answer did not work, open a new request whose `Tried` section starts with that answer and what
+>    it produced.
 
 (The herdr skill warns against asking for file output in an initial prompt. That guidance is about
 *retrieving long answers*; here the files are a state protocol that must survive compaction.)

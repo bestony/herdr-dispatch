@@ -197,6 +197,7 @@ shell subcommand, so it costs the lane nothing; run it once at report time, not 
 | `done` | `.dispatch/DONE` exists **and** `turn_state == complete` | Verify (§6e), publish (§6f), mark terminal |
 | `approval_parked` | §6a's `approval_parked`, or `agent_status == blocked` | Read `--source visible`, handle (§6g) |
 | `identity_mismatch` | `summary.json`'s `head_branch` ≠ the lane's branch, or the session uuid changed with no restart in flight | Surface it; steer nothing (§6b) |
+| `help_pending` | a help request (§6j) is open, escalated, or answered but not yet delivered, **and** `turn_state == complete` | Answered and undelivered → deliver (§6d); otherwise leave it — the lane is waiting on you or the user, so never nudge it, ask `/goal status`, or escalate it as stuck |
 | `stalled` | `state_change_seq` **and** `mtime` both unchanged ≥ 15 min | Ask `/goal status` if the lane has a goal (§6d), else read `--source visible` once: a parked selection list → §6d/§6g; an idle composer over unfinished work → the `idle_incomplete` action; otherwise escalate; never score as finished |
 | `hot` | `used_pct ≥ <auto-compact threshold> + 5`, `compactions` unchanged since the previous sweep, **and** `turn_state == complete` | Grok's own auto-compaction should have fired and did not — compact manually (§6h) |
 | `idle_incomplete` | `turn_state == complete`, no `DONE` file, and either the lane has no goal, or `/goal status` (§6d) reported it not `active` | Read `progress.md`, send a specific continuation prompt, record the nudge; a re-nudge with no progress since the last one escalates instead |
@@ -266,6 +267,22 @@ bare "continue" wastes a turn. Record `nudges`, the branch HEAD sha and a hash o
 each nudge: a nudge that produces neither a new commit nor a changed `progress.md` by the next sweep
 means the lane is not responding to prompts, and the second such nudge escalates instead of firing a
 third.
+
+**Delivering a help answer (§6j).** The answer file is already on disk; this decides whether the
+lane also needs a prompt. Every prompt here is subject to §6b's prompt guard.
+
+- `turn_state == working` → file only. The lane checks `.dispatch/help/` after every checklist item
+  and at the start of every turn (§5b).
+- turn complete, lane has no goal (`goal_skipped`) → send the answer prompt below.
+- turn complete, lane has a goal → ask `/goal status` first (above) — it is the one place this
+  sweep may spend that turn on a `help_pending` lane. **active** → file only; the next round finds
+  it. **blocked** → answer prompt with `--wait --until idle --timeout 120000`, then `/goal resume`.
+  **complete** → answer prompt. **paused** → the pause rules above decide; never resume a pause you
+  did not record.
+
+The answer prompt:
+
+    herdr agent prompt <lane> "Help answer for H-<n> is in .dispatch/help/H-<n>.answer.md. Read it, apply it, append 'applied H-<n>' to .dispatch/progress.md, then continue the plan."
 
 **A replace-or-keep goal dialog on screen** (**unverified** for grok, but its sibling driver has it
 verified for codex): it means a second `/goal <objective>` reached a lane whose goal was still live.
