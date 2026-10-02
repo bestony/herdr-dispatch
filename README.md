@@ -4,7 +4,7 @@ A Claude Code plugin that turns one Claude session into an **orchestrator** for 
 agents.
 
 You describe the work. Claude splits it into *lanes*, gives each lane its own git worktree and its
-own agent — **codex**, **grok** or **opencode** — running inside a [herdr](https://herdr.dev)
+own agent — **codex**, **grok**, **opencode** or **antigravity** (`agy`) — running inside a [herdr](https://herdr.dev)
 workspace, then supervises every lane on a timer until its work is verified, its branch is pushed
 and its pull request is open.
 
@@ -27,7 +27,7 @@ The division of labour is deliberate:
 | [**herdr**](https://herdr.dev) | Creates the worktrees, workspaces and panes each lane lives in. `brew install herdr` — developed against 0.9.0 |
 | **A herdr pane** | The skills refuse to run outside one — there would be nothing to dispatch into |
 | **A git repository** | Every lane is a linked worktree branched off a base ref. Run from the main checkout, not a linked worktree |
-| **At least one agent CLI** | `codex`, `grok`, or `opencode` — whichever dispatcher you invoke, resolvable from the pane's own login shell |
+| **At least one agent CLI** | `codex`, `grok`, `opencode`, or `agy` (Antigravity CLI) — whichever dispatcher you invoke, resolvable from the pane's own login shell |
 | **`python3`, `jq`** | Used to probe each lane's on-disk state |
 | **`gh`, authenticated** | Optional. Without it lanes are pushed but the `gh pr create` command is printed for you to run |
 | **`origin` remote** | Optional. Without it lanes stay local and are reported as such |
@@ -48,7 +48,7 @@ If the install summary says `Run /reload-plugins to activate.`, run that.
 
 ### Via skills.sh
 
-The same three skills are also published to the [skills.sh](https://skills.sh) registry, for installs
+The same four skills are also published to the [skills.sh](https://skills.sh) registry, for installs
 that are not plugin-managed — or for handing them to another agent that reads `SKILL.md`:
 
 ```bash
@@ -100,7 +100,7 @@ What happens next:
 The plan, the questions and the final report are in Chinese; the briefs, commits and PR bodies are
 in English.
 
-## The three dispatchers
+## The four dispatchers
 
 Same procedure, same flags, different agent underneath. Pick by which CLI you have and how
 autonomous you want the lanes to be.
@@ -110,6 +110,7 @@ autonomous you want the lanes to be.
 | `/dispatch-codex` | codex | **Goal mode** (`/goal`). Codex auto-continues toward the objective across turns; the supervision loop is a repair path |
 | `/dispatch-grok` | grok (Grok Build) | **Goal mode** when `[goal] enabled = true` in `~/.grok/config.toml`, otherwise one-shot + nudges. The dispatcher reads your config and tells you which regime is in force |
 | `/dispatch-opencode` | opencode | **Nudge-driven.** Opencode has no goal mode — it stops after every turn, so the loop's continuation prompt *is* the engine. Expect roughly one turn per sweep interval |
+| `/dispatch-antigravity` | agy (Antigravity CLI) | **Goal mode** (`/goal`). agy pursues the goal inside one long run until it writes its own goal-complete marker; a run that stops short (interrupt, quota) is re-engaged by the loop |
 
 Plugin-qualified forms work too: `/herdr-dispatch:dispatch-codex`.
 
@@ -135,7 +136,9 @@ Everything that is not a flag is task text. Tasks split on numbered items, newli
 
 `--compact-at` takes absolute tokens rather than a percentage because opencode publishes no context
 window on disk, and the dispatcher refuses to invent a denominator. The codex and grok dispatchers
-compact on a percentage they can actually read.
+compact on a percentage they can actually read. The antigravity dispatcher has no compaction flag
+at all: agy compacts on its own and has no `/compact` command, so a lane that has compacted
+several times and stopped making progress is restarted on a fresh conversation instead.
 
 ### Two things that are not flags
 
@@ -151,11 +154,20 @@ the next sweep notices it, so lanes launch with approvals bypassed:
 | codex | `--dangerously-bypass-approvals-and-sandbox` | Approvals **and** the sandbox |
 | grok | `--permission-mode bypassPermissions` | Approvals only — your `--sandbox` profile is left untouched, so if you have it set to `off`, the worktree is the only boundary |
 | opencode | `--auto` | Approvals only, and opencode's own help calls it dangerous. There is no sandbox either way |
+| agy | `--dangerously-skip-permissions` | Approvals only. Your `--sandbox` / project `sandboxMode` is left untouched. agy has no flag that turns prompting back on, so if your agy config already auto-approves (`toolPermission: always-proceed`, a `TURBO` project preset), `--no-yolo` changes nothing — the plan summary tells you so |
 
 Pass `--no-yolo` to keep prompting; the loop then resolves each overlay itself, at the cost of a lane
 pausing between sweeps. Under `--no-yolo` the flag is passed through *explicitly* rather than merely
 omitted, because a global `yolo = true` in the agent's own config would otherwise leave the lane
-auto-approving while the plan summary claimed the opposite.
+auto-approving while the plan summary claimed the opposite. agy is the exception: it has no
+explicit "prompt me" flag, so the dispatcher reads your agy config and tells you up front when
+`--no-yolo` cannot take effect.
+
+**agy also needs an absolute working directory.** agy adds your active agy project's folders to
+every session's workspace list ahead of the pane's cwd, and in testing a lane ran its first commands
+in that project folder instead of its own checkout. The antigravity dispatcher therefore writes the
+checkout's absolute path into both the brief and the goal, and names any outside project folder in
+the plan summary.
 
 ## Resuming and stopping
 
@@ -260,11 +272,12 @@ skills/
 │       ├── plan.md           # symlink → ../../_shared/plan.md
 │       └── supervise.md      # symlink → ../../_shared/supervise.md
 ├── dispatch-grok/            # same shape
-└── dispatch-opencode/        # same shape
+├── dispatch-opencode/        # same shape
+└── dispatch-antigravity/     # same shape
 ```
 
 Each dispatcher is four files with **continuous section numbers §0–§8**, so a cross-reference means
-the same thing wherever you are. Adding a fourth agent means writing one `SKILL.md` and one
+the same thing wherever you are. Adding another agent means writing one `SKILL.md` and one
 `driver.md`, plus the two `references/` symlinks; `_shared/` itself is reused untouched.
 
 The symlinks exist because the skills.sh installer copies a skill directory **on its own** — its

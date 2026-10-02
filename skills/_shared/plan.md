@@ -9,7 +9,7 @@ lives in the calling skill's `references/driver.md`. §0 (invariants) and §1 (g
 its `SKILL.md`; §6–§8 live in `references/supervise.md`. Section numbers are continuous across all
 four files, so a cross-reference means the same thing wherever you are.
 
-Throughout, **the agent** means whichever CLI this skill dispatches (codex, grok, opencode…),
+Throughout, **the agent** means whichever CLI this skill dispatches (codex, grok, opencode, agy…),
 and **the driver** means that skill's `references/driver.md`.
 
 ---
@@ -242,7 +242,9 @@ Then the load-bearing part:
 
 `.dispatch/progress.md` carries more weight the less autonomous the agent is: for a lane driven by
 re-nudges (§6c `idle_incomplete`) it is the only thing that tells the next nudge where to resume, so
-the driver may strengthen this paragraph — never weaken it.
+the driver may strengthen this paragraph — never weaken it. The same holds for the boundaries: a
+driver whose agent can wander outside its checkout adds its own boundary lines to the brief (the
+antigravity driver's §5a does), and never removes one.
 
 Then the notify-back, so a finished lane rings the orchestrator instead of sitting undiscovered
 until the next §7 tick. Write it into the brief with `<orch-pane>` (the §2 `orchestrator_pane`),

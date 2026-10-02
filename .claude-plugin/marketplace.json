@@ -10,7 +10,7 @@
     {
       "name": "herdr-dispatch",
       "source": "./",
-      "description": "Dispatch tasks to codex / grok / opencode agents running in isolated herdr worktrees, supervise them to completion, then push each lane and open its pull request"
+      "description": "Dispatch tasks to codex / grok / opencode / antigravity agents running in isolated herdr worktrees, supervise them to completion, then push each lane and open its pull request"
     }
   ]
 }
