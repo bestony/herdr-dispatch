@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-02
+
+### Added
+
+- **`dispatch-antigravity`** — a fourth dispatcher, for the Antigravity CLI (`agy`, herdr kind
+  `agy`). It uses the same shared plan and supervision halves and the same flags as the other
+  dispatchers. Verified against agy 1.2.14 under herdr 0.9.3:
+  - lanes run in agy goal mode (`/goal`). agy pursues the goal in one long run and writes a
+    `<!-- GOAL_COMPLETE -->` marker when it judges the goal met. A run that stops without the
+    marker, or stops on a quota error after its reset time, is re-engaged by the loop;
+  - the probe reads `conversation_summaries.db` (run status) and the tail of each conversation's
+    `transcript.jsonl` (compaction checkpoints, quota errors, the goal marker). Lane identity
+    comes from herdr's `agent_session` value, which is the agy conversation id;
+  - the driver accepts the workspace-trust dialog itself, because herdr reports the lane as
+    `idle` and ready while the dialog is still on screen;
+  - the brief and the goal both carry the checkout's absolute path. agy adds the active agy
+    project's folders to the workspace list ahead of the pane's cwd, and in a test a lane ran
+    commands in that folder;
+  - `--no-yolo` drops `--dangerously-skip-permissions`. agy has no flag that turns prompting on,
+    so the plan summary says when the user's agy config auto-approves anyway;
+  - there is no `hot` row and no `--compact-at`: agy compacts by itself and has no `/compact`
+    command. A lane that compacted 4 or more times and stops progressing is restarted with
+    `/clear` and primed again from `.dispatch/`.
+- The shared brief section now lets a driver add boundary lines for its agent.
+
 ## [0.1.0] - 2026-10-02
 
 First tagged release.
@@ -47,4 +72,5 @@ First tagged release.
 - Driver pre-flight used the removed `herdr pane run` command.
 - PR provenance lines no longer name the model or the approval posture.
 
+[0.2.0]: https://github.com/bestony/herdr-dispatch/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bestony/herdr-dispatch/releases/tag/v0.1.0
